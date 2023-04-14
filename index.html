@@ -1,0 +1,50 @@
+<input type="file" id="file-input">
+<button id="upload-btn">Upload</button>
+
+<script>
+const CHUNK_SIZE = 1000000; // 1MB chunk size
+
+document.getElementById('upload-btn').addEventListener('click', async () => {
+  const fileInput = document.getElementById('file-input');
+  const file = fileInput.files[0];
+  
+  // Calculate the number of chunks
+  const fileSize = file.size;
+  const chunks = Math.ceil(fileSize / CHUNK_SIZE);
+  
+  // Send each chunk to the server
+  let offset = 0;
+  let j = 0;
+  for (let i = 0; i < chunks; i++) {
+    const chunk = file.slice(offset, offset + CHUNK_SIZE);
+    const formData = new FormData();
+    // formData.append('chunk', chunk, file.name + '.part' + i);
+    formData.append('file', chunk, file.name);
+    
+    // formData.append('index', i);
+    // formData.append('totalChunks', chunks);
+    var myHeaders = new Headers();
+    myHeaders.append("file-chunk-id", "random-hash");
+    myHeaders.append("file-chunk-size", CHUNK_SIZE);
+    // myHeaders.append("Content-Range", "bytes 0-6000/10000");
+    myHeaders.append("Content-Range", `bytes ${CHUNK_SIZE * i}-${CHUNK_SIZE * ++j}/${fileSize}`);
+    console.log(`bytes ${CHUNK_SIZE * i}-${CHUNK_SIZE * j}/${fileSize}`, chunks)
+    // var formdata = new FormData();
+    // formdata.append("file", fileInput.files[0], "filename.txt");
+    await fetch('http://localhost:3000/upload', {
+      headers: myHeaders,
+      redirect: 'follow',
+      method: 'POST',
+      body: formData
+    });
+    
+    offset += CHUNK_SIZE;
+  }
+  
+  // Notify the server that all chunks have been uploaded
+  // await fetch('http://localhost:3000/upload/complete', {
+  //   method: 'POST',
+  //   body: JSON.stringify({ fileName: file.name, chunks })
+  // });
+});
+</script>
